@@ -24,10 +24,10 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
 
-        Log.d(TAG, "Intent Received");
-
         String action = intent.getAction();
         if (WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION.equals(action)) {
+            Log.d(TAG, "P2P state changed");
+
             // Determine if Wifi P2P mode is enabled or not, alert
             // the Activity.
             int state = intent.getIntExtra(WifiP2pManager.EXTRA_WIFI_STATE, -1);
@@ -37,6 +37,7 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
                 mActivity.setIsWifiP2pEnabled(false);
             }
         } else if (WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION.equals(action)) {
+            Log.d(TAG, "P2P peers changed");
 
             // Request available peers from the wifi p2p manager. This is an
             // asynchronous call and the calling activity is notified with a
@@ -44,9 +45,10 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
             if (mManager != null) {
                 mManager.requestPeers(mChannel, mActivity.peerListListener);
             }
-            Log.d(TAG, "P2P peers changed");
 
         } else if (WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION.equals(action)) {
+            Log.d(TAG, "P2P connection changed");
+
 
             if (mManager == null) {
                 return;
@@ -69,6 +71,8 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
             }
 
         } else if (WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION.equals(action)) {
+                Log.d(TAG, "P2P device changed");
+
                 /*
                 MainActivityFragment fragment = (MainActivityFragment) mActivity.getFragmentManager()
                         .findFragmentById(R.id.fragment);

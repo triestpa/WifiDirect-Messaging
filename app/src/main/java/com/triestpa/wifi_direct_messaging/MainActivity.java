@@ -63,7 +63,6 @@ public class MainActivity extends ActionBarActivity {
                 // No services have actually been discovered yet, so this method
                 // can often be left blank.  Code for peer discovery goes in the
                 // onReceive method, detailed below.
-                Log.d(TAG, "Success!");
                 mManager.requestPeers(mChannel, mActivity.peerListListener);
             }
 
@@ -71,7 +70,7 @@ public class MainActivity extends ActionBarActivity {
             public void onFailure(int reasonCode) {
                 // Code for when the discovery initiation fails goes here.
                 // Alert the user that something went wrong.
-                Log.d(TAG, "Fail!");
+                Log.e(TAG, "Peer Discovery Failed");
             }
         });
     }
@@ -161,7 +160,7 @@ public class MainActivity extends ActionBarActivity {
                 return;
             }
             else {
-                Log.d(TAG, mPeers.toString());
+                Log.d(TAG, mPeers.size() + " Peer(s) Found");
             }
         }
     };
