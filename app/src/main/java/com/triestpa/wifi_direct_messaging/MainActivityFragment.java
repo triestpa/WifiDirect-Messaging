@@ -7,10 +7,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.TextView;
 
 public class MainActivityFragment extends Fragment {
 
     MainActivity mActivity;
+    TextView peerInfo;
 
     public MainActivityFragment() {
     }
@@ -21,13 +23,24 @@ public class MainActivityFragment extends Fragment {
         mActivity = (MainActivity) getActivity();
         View fragmentView = inflater.inflate(R.layout.fragment_main, container, false);
 
-        Button testButton = (Button) fragmentView.findViewById(R.id.test_button);
+        Button testButton = (Button) fragmentView.findViewById(R.id.detect_button);
         testButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 discoverPeers();
+                updateInfo();
             }
         });
+
+        Button connectButton = (Button) fragmentView.findViewById(R.id.connect_button);
+        connectButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mActivity.connectToDevice();
+            }
+        });
+
+        peerInfo = (TextView) fragmentView.findViewById(R.id.peer_info);
 
         return fragmentView;
     }
@@ -38,5 +51,9 @@ public class MainActivityFragment extends Fragment {
 
     private void discoverPeers() {
         mActivity.discoverPeers();
+    }
+
+    private void updateInfo() {
+        peerInfo.setText(mActivity.mPeers.toString());
     }
 }

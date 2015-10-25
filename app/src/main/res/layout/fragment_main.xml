@@ -2,10 +2,23 @@
     xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
     android:layout_height="match_parent" tools:context=".MainActivityFragment">
 
-    <Button android:text="Test" android:layout_width="wrap_content"
+    <Button android:text="Detect" android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
-        android:id="@+id/test_button"
+        android:id="@+id/detect_button"
+        />
+
+    <Button android:text="Connect" android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/detect_button"
+        android:layout_centerHorizontal="true"
+        android:id="@+id/connect_button"
+        />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/peer_info"
         />
 
 </RelativeLayout>

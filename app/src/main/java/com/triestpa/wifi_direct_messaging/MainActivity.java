@@ -2,12 +2,20 @@ package com.triestpa.wifi_direct_messaging;
 
 import android.content.Context;
 import android.content.IntentFilter;
+import android.net.wifi.WpsInfo;
+import android.net.wifi.p2p.WifiP2pConfig;
+import android.net.wifi.p2p.WifiP2pDevice;
+import android.net.wifi.p2p.WifiP2pDeviceList;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends ActionBarActivity {
     private final String TAG = MainActivity.class.getSimpleName();
@@ -17,6 +25,9 @@ public class MainActivity extends ActionBarActivity {
     WifiP2pManager mManager;
     MainActivity mActivity;
     WiFiDirectBroadcastReceiver mReceiver;
+
+    List mPeers = new ArrayList();
+
 
     boolean wifiP2pEnabled = false;
 
@@ -40,6 +51,7 @@ public class MainActivity extends ActionBarActivity {
         mManager = (WifiP2pManager) getSystemService(Context.WIFI_P2P_SERVICE);
         mChannel = mManager.initialize(this, getMainLooper(), null);
         mActivity = this;
+
     }
 
     public void discoverPeers() {
@@ -52,6 +64,7 @@ public class MainActivity extends ActionBarActivity {
                 // can often be left blank.  Code for peer discovery goes in the
                 // onReceive method, detailed below.
                 Log.d(TAG, "Success!");
+                mManager.requestPeers(mChannel, mActivity.peerListListener);
             }
 
             @Override
@@ -103,4 +116,53 @@ public class MainActivity extends ActionBarActivity {
 
         return super.onOptionsItemSelected(item);
     }
+
+    public void connectToDevice() {
+
+        if (mPeers != null && !mPeers.isEmpty()) {
+
+            // Picking the first device found on the network.
+            WifiP2pDevice device = (WifiP2pDevice) mPeers.get(0);
+
+            WifiP2pConfig config = new WifiP2pConfig();
+            config.deviceAddress = device.deviceAddress;
+            config.wps.setup = WpsInfo.PBC;
+
+            mManager.connect(mChannel, config, new WifiP2pManager.ActionListener() {
+
+                @Override
+                public void onSuccess() {
+                    // WiFiDirectBroadcastReceiver will notify us. Ignore for now.
+
+                }
+
+                @Override
+                public void onFailure(int reason) {
+                    Toast.makeText(MainActivity.this, "Connect failed. Retry.",
+                            Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+    }
+
+    protected WifiP2pManager.PeerListListener peerListListener = new WifiP2pManager.PeerListListener() {
+        @Override
+        public void onPeersAvailable(WifiP2pDeviceList peerList) {
+
+            // Out with the old, in with the new.
+            mPeers.clear();
+            mPeers.addAll(peerList.getDeviceList());
+
+            // If an AdapterView is backed by this data, notify it
+            // of the change.  For instance, if you have a ListView of available
+            // peers, trigger an update.
+            if (mPeers.size() == 0) {
+                Log.d(TAG, "No devices found");
+                return;
+            }
+            else {
+                Log.d(TAG, mPeers.toString());
+            }
+        }
+    };
 }
