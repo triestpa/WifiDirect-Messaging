@@ -5,10 +5,12 @@ import android.content.IntentFilter;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
 public class MainActivity extends ActionBarActivity {
+    private final String TAG = MainActivity.class.getSimpleName();
 
     private final IntentFilter intentFilter = new IntentFilter();
     WifiP2pManager.Channel mChannel;
@@ -38,6 +40,27 @@ public class MainActivity extends ActionBarActivity {
         mManager = (WifiP2pManager) getSystemService(Context.WIFI_P2P_SERVICE);
         mChannel = mManager.initialize(this, getMainLooper(), null);
         mActivity = this;
+    }
+
+    public void discoverPeers() {
+        mManager.discoverPeers(mChannel, new WifiP2pManager.ActionListener() {
+
+            @Override
+            public void onSuccess() {
+                // Code for when the discovery initiation is successful goes here.
+                // No services have actually been discovered yet, so this method
+                // can often be left blank.  Code for peer discovery goes in the
+                // onReceive method, detailed below.
+                Log.d(TAG, "Success!");
+            }
+
+            @Override
+            public void onFailure(int reasonCode) {
+                // Code for when the discovery initiation fails goes here.
+                // Alert the user that something went wrong.
+                Log.d(TAG, "Fail!");
+            }
+        });
     }
 
     /** register the BroadcastReceiver with the intent values to be matched */

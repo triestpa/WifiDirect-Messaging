@@ -1,16 +1,16 @@
 package com.triestpa.wifi_direct_messaging;
 
 import android.net.wifi.p2p.WifiP2pDevice;
-import android.support.v4.app.Fragment;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 
-/**
- * A placeholder fragment containing a simple view.
- */
 public class MainActivityFragment extends Fragment {
+
+    MainActivity mActivity;
 
     public MainActivityFragment() {
     }
@@ -18,10 +18,25 @@ public class MainActivityFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_main, container, false);
+        mActivity = (MainActivity) getActivity();
+        View fragmentView = inflater.inflate(R.layout.fragment_main, container, false);
+
+        Button testButton = (Button) fragmentView.findViewById(R.id.test_button);
+        testButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                discoverPeers();
+            }
+        });
+
+        return fragmentView;
     }
 
     public void updateThisDevice(WifiP2pDevice device) {
         //TODO update the device in the UI
+    }
+
+    private void discoverPeers() {
+        mActivity.discoverPeers();
     }
 }
