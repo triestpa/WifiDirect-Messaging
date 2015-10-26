@@ -20,19 +20,20 @@ import android.view.MenuItem;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.apache.commons.io.IOUtils;
-
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.StringWriter;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends ActionBarActivity {
     private final String TAG = MainActivity.class.getSimpleName();
@@ -181,9 +182,10 @@ public class MainActivity extends ActionBarActivity {
     };
 
 
-
     public void startServer() {
-        if (isServer) {new ServerSocketTask(this).execute();}
+        if (isServer) {
+            new ServerSocketTask(this).execute();
+        }
     }
 
     public void startClient(String host, int port, String message) {
@@ -192,10 +194,12 @@ public class MainActivity extends ActionBarActivity {
         }
     }
 
-    public static class ServerSocketTask extends AsyncTask<Void, Boolean, String> {
+    public static class ServerSocketTask extends AsyncTask<Void, String, String> {
         private final String TAG = ServerSocketTask.class.getSimpleName();
 
         private Context context;
+        int len;
+        byte buf[] = new byte[1024];
 
         public ServerSocketTask(Context context) {
             this.context = context;
@@ -212,23 +216,61 @@ public class MainActivity extends ActionBarActivity {
 
                 Log.d(TAG, "Server Listening");
                 ServerSocket serverSocket = new ServerSocket(8888);
-                Socket client = serverSocket.accept();
 
-                /**
-                 * If this code is reached, a client has connected and transferred data
-                 */
+                while(true) {
+                    Socket client = serverSocket.accept();
 
-                Log.d(TAG, "Client Connected");
+                    InetAddress clientIP = client.getInetAddress();
+                    Log.d(TAG, clientIP.toString());
 
-                InputStream inputstream = client.getInputStream();
-                StringWriter writer = new StringWriter();
-                IOUtils.copy(inputstream, writer, "UTF-8");
-                String theString = writer.toString();
-                serverSocket.close();
-                return theString;
+                    /**
+                     * If this code is reached, a client has connected and transferred data
+                     */
+
+                    Log.d(TAG, "Client Connected");
+
+/*
+                    InputStream inputstream = client.getInputStream();
+                    StringWriter writer = new StringWriter();
+                    IOUtils.copy(inputstream, writer, "UTF-8");
+                    String theString = writer.toString();
+                   // inputstream.close();
+*/
+
+                    InputStream inputStream = client.getInputStream();
+                    BufferedReader in = new BufferedReader(new InputStreamReader(inputStream));
+                    String theString  = in.readLine();
+
+
+                    publishProgress(theString);
+
+                    // Echo the message back
+                    OutputStream outputStream = client.getOutputStream();
+                    ContentResolver cr = context.getContentResolver();
+                    InputStream stringStream = null;
+                    stringStream = new ByteArrayInputStream(theString.getBytes("UTF-8"));
+                    while ((len = stringStream.read(buf)) != -1) {
+                        outputStream.write(buf, 0, len);
+                    }
+                   // outputStream.close();
+
+                    TimeUnit.SECONDS.sleep(2);
+                }
+                //serverSocket.close();
+                //return theString;
             } catch (IOException e) {
                 Log.e(TAG, e.getMessage());
-                return null;
+            }
+            catch (InterruptedException e) {
+                Log.e(TAG, e.getMessage());
+            }
+            return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(String... message) {
+            if (message[0] != null && message[0] != "") {
+                showMessage(message[0], context);
             }
         }
 
@@ -236,28 +278,12 @@ public class MainActivity extends ActionBarActivity {
         protected void onPostExecute(String result) {
             if (result != null) {
                 Log.d(TAG, "Message Received: " + result);
-                showMessage(result);
+                showMessage(result, context);
             }
-        }
-
-        public void showMessage(String message) {
-            AlertDialog alertDialog = new AlertDialog.Builder(context).create();
-            alertDialog.setTitle("Message Recieved");
-            alertDialog.setMessage(message);
-            alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
-                    new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                        }
-                    });
-            alertDialog.show();
         }
     }
 
-
-
-
-    public static class ClientSocketTask extends AsyncTask<Void, Boolean, String> {
+    public static class ClientSocketTask extends AsyncTask<Void, String, String> {
         private final String TAG = ServerSocketTask.class.getSimpleName();
 
         private Context context;
@@ -266,6 +292,7 @@ public class MainActivity extends ActionBarActivity {
         private int port;
 
         String message;
+        String echo = "Not Echo";
 
         public ClientSocketTask(Context context, String host, int port, String message) {
             this.context = context;
@@ -289,26 +316,30 @@ public class MainActivity extends ActionBarActivity {
                 socket.bind(null);
                 socket.connect((new InetSocketAddress(host, port)), 500);
 
-
-                /**
-                 * Create a byte stream from a JPEG file and pipe it to the output stream
-                 * of the socket. This data will be retrieved by the server device.
-                 */
                 OutputStream outputStream = socket.getOutputStream();
-                ContentResolver cr = appContext.getContentResolver();
-                InputStream inputStream = null;
 
-                inputStream = new ByteArrayInputStream(message.getBytes("UTF-8"));
-                while ((len = inputStream.read(buf)) != -1) {
+                InputStream stringStream = new ByteArrayInputStream(message.getBytes("UTF-8"));
+                while ((len = stringStream.read(buf)) != -1) {
                     outputStream.write(buf, 0, len);
                 }
                 outputStream.close();
+                socket.close();
+
+
+                socket.connect((new InetSocketAddress(host, port)), 500);
+                InputStream inputStream = socket.getInputStream();
+                BufferedReader in = new BufferedReader(new InputStreamReader(inputStream));
+                echo = in.readLine();
+                publishProgress(echo);
+
                 inputStream.close();
+
             } catch (FileNotFoundException e) {
                 Log.e(TAG, e.getMessage());
             } catch (IOException e) {
                 Log.e(TAG, e.getMessage());
             }
+
 
             /**
              * Clean up any open sockets when done
@@ -318,22 +349,40 @@ public class MainActivity extends ActionBarActivity {
                     if (socket.isConnected()) {
                         try {
                             socket.close();
-                            return "Message Sent";
+                            return echo;
                         } catch (IOException e) {
                             Log.e(TAG, e.getMessage());
-                            //catch logic
                         }
                     }
                 }
             }
-            return "Error";
+            return echo;
         }
 
         @Override
-        protected void onPostExecute(String result) {
-            if (result != null) {
-                Log.d(TAG, result);
+        protected void onProgressUpdate(String... message) {
+            showMessage(message[0], context);
+        }
+
+        @Override
+        protected void onPostExecute(String message) {
+            if (message != null) {
+                showMessage(message, context);
+                Log.d(TAG, message);
             }
         }
+    }
+
+    public static void showMessage(String message, Context context) {
+        AlertDialog alertDialog = new AlertDialog.Builder(context).create();
+        alertDialog.setTitle("Message Recieved");
+        alertDialog.setMessage(message);
+        alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                });
+        alertDialog.show();
     }
 }
