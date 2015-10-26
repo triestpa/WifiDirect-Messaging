@@ -10,15 +10,37 @@
 
     <Button android:text="Connect" android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/detect_button"
-        android:layout_centerHorizontal="true"
+        android:layout_toRightOf="@+id/detect_button"
+        android:layout_centerVertical="true"
         android:id="@+id/connect_button"
+        />
+
+
+    <Button android:text="Send" android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toLeftOf="@+id/detect_button"
+        android:layout_centerVertical="true"
+        android:id="@+id/send_button"
+        />
+
+    <Button android:text="Start Server" android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toLeftOf="@+id/send_button"
+        android:layout_centerVertical="true"
+        android:id="@+id/start_server"
         />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/peer_info"
+        />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/connection_info"
+        android:layout_below="@+id/detect_button"
         />
 
 </RelativeLayout>

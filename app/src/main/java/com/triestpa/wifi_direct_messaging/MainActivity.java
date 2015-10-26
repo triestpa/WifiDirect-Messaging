@@ -1,28 +1,33 @@
 package com.triestpa.wifi_direct_messaging;
 
+import android.app.AlertDialog;
+import android.content.ContentResolver;
 import android.content.Context;
-import android.content.Intent;
 import android.content.IntentFilter;
-import android.net.Uri;
 import android.net.wifi.WpsInfo;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pDeviceList;
+import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Environment;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.File;
+import org.apache.commons.io.IOUtils;
+
+import java.io.ByteArrayInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.StringWriter;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -34,12 +39,13 @@ public class MainActivity extends ActionBarActivity {
     private final IntentFilter intentFilter = new IntentFilter();
     WifiP2pManager.Channel mChannel;
     WifiP2pManager mManager;
+    WifiP2pInfo mConnectionInfo;
     MainActivity mActivity;
     WiFiDirectBroadcastReceiver mReceiver;
 
     List mPeers = new ArrayList();
 
-
+    boolean isServer = false;
     boolean wifiP2pEnabled = false;
 
     @Override
@@ -85,7 +91,9 @@ public class MainActivity extends ActionBarActivity {
         });
     }
 
-    /** register the BroadcastReceiver with the intent values to be matched */
+    /**
+     * register the BroadcastReceiver with the intent values to be matched
+     */
     @Override
     public void onResume() {
         super.onResume();
@@ -165,22 +173,29 @@ public class MainActivity extends ActionBarActivity {
             if (mPeers.size() == 0) {
                 Log.d(TAG, "No devices found");
                 return;
-            }
-            else {
+            } else {
                 Log.d(TAG, mPeers.size() + " Peer(s) Found");
             }
         }
     };
 
-    public static class ServerSocketTask extends AsyncTask<Void, String, String> {
+    public void startServer() {
+        if (isServer) {new ServerSocketTask(this).execute();}
+    }
+
+    public void startClient(String host, int port) {
+        if (!isServer) {
+            new ClientSocketTask(this, host, port).execute();
+        }
+    }
+
+    public static class ServerSocketTask extends AsyncTask<Void, Boolean, String> {
         private final String TAG = ServerSocketTask.class.getSimpleName();
 
         private Context context;
-        private TextView statusText;
 
-        public ServerSocketTask(Context context, View statusText) {
+        public ServerSocketTask(Context context) {
             this.context = context;
-            this.statusText = (TextView) statusText;
         }
 
         @Override
@@ -191,44 +206,120 @@ public class MainActivity extends ActionBarActivity {
                  * Create a server socket and wait for client connections. This
                  * call blocks until a connection is accepted from a client
                  */
+
+                Log.d(TAG, "Server Listening");
                 ServerSocket serverSocket = new ServerSocket(8888);
                 Socket client = serverSocket.accept();
 
                 /**
                  * If this code is reached, a client has connected and transferred data
-                 * Save the input stream from the client as a JPEG file
                  */
-                final File f = new File(Environment.getExternalStorageDirectory() + "/"
-                        + context.getPackageName() + "/wifip2pshared-" + System.currentTimeMillis()
-                        + ".jpg");
 
-                File dirs = new File(f.getParent());
-                if (!dirs.exists())
-                    dirs.mkdirs();
-                f.createNewFile();
+                Log.d(TAG, "Client Connected");
+
                 InputStream inputstream = client.getInputStream();
-               // copyFile(inputstream, new FileOutputStream(f));
+                StringWriter writer = new StringWriter();
+                IOUtils.copy(inputstream, writer, "UTF-8");
+                String theString = writer.toString();
                 serverSocket.close();
-                return f.getAbsolutePath();
+                return theString;
             } catch (IOException e) {
                 Log.e(TAG, e.getMessage());
                 return null;
             }
         }
 
-        /**
-         * Start activity that can handle the JPEG image
-         */
         @Override
         protected void onPostExecute(String result) {
             if (result != null) {
-                statusText.setText("File copied - " + result);
-                Intent intent = new Intent();
-                intent.setAction(android.content.Intent.ACTION_VIEW);
-                intent.setDataAndType(Uri.parse("file://" + result), "image/*");
-                context.startActivity(intent);
+                Log.d(TAG, "Message Received: " + result);
+                // 1. Instantiate an AlertDialog.Builder with its constructor
+                AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                // 2. Chain together various setter methods to set the dialog characteristics
+                builder.setMessage(result).setTitle("Message");
+                // 3. Get the AlertDialog from create()
+                AlertDialog dialog = builder.create();
             }
         }
     }
 
+
+    public static class ClientSocketTask extends AsyncTask<Void, Boolean, String> {
+        private final String TAG = ServerSocketTask.class.getSimpleName();
+
+        private Context context;
+        private TextView statusText;
+        private String host;
+        private int port;
+
+        String message = "test";
+
+        public ClientSocketTask(Context context, String host, int port) {
+            this.context = context;
+            this.host = host;
+            this.port = port;
+        }
+
+        @Override
+        protected String doInBackground(Void... params) {
+            Context appContext = context.getApplicationContext();
+            int len;
+            Socket socket = new Socket();
+            byte buf[] = new byte[1024];
+
+            try {
+                /**
+                 * Create a client socket with the host,
+                 * port, and timeout information.
+                 */
+                socket.bind(null);
+                socket.connect((new InetSocketAddress(host, port)), 500);
+
+
+                /**
+                 * Create a byte stream from a JPEG file and pipe it to the output stream
+                 * of the socket. This data will be retrieved by the server device.
+                 */
+                OutputStream outputStream = socket.getOutputStream();
+                ContentResolver cr = appContext.getContentResolver();
+                InputStream inputStream = null;
+
+                inputStream = new ByteArrayInputStream(message.getBytes("UTF-8"));
+                while ((len = inputStream.read(buf)) != -1) {
+                    outputStream.write(buf, 0, len);
+                }
+                outputStream.close();
+                inputStream.close();
+            } catch (FileNotFoundException e) {
+                Log.e(TAG, e.getMessage());
+            } catch (IOException e) {
+                Log.e(TAG, e.getMessage());
+            }
+
+            /**
+             * Clean up any open sockets when done
+             * transferring or if an exception occurred.
+             */ finally {
+                if (socket != null) {
+                    if (socket.isConnected()) {
+                        try {
+                            socket.close();
+                            return "Message Sent";
+                        } catch (IOException e) {
+                            Log.e(TAG, e.getMessage());
+                            //catch logic
+                        }
+                    }
+                }
+            }
+            return "Error";
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            if (result != null) {
+                Log.d(TAG, result);
+            }
+        }
+    }
 }

@@ -13,6 +13,8 @@ public class MainActivityFragment extends Fragment {
 
     MainActivity mActivity;
     TextView peerInfo;
+    TextView connectionInfo;
+
 
     public MainActivityFragment() {
     }
@@ -37,10 +39,22 @@ public class MainActivityFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 mActivity.connectToDevice();
+                updateConnectionInfo();
             }
         });
 
+
+        Button serverButton = (Button) fragmentView.findViewById(R.id.start_server);
+        serverButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mActivity.startServer();
+            }
+        });
+
+
         peerInfo = (TextView) fragmentView.findViewById(R.id.peer_info);
+        connectionInfo = (TextView) fragmentView.findViewById(R.id.connection_info);
 
         return fragmentView;
     }
@@ -56,4 +70,12 @@ public class MainActivityFragment extends Fragment {
     private void updateInfo() {
         peerInfo.setText(mActivity.mPeers.toString());
     }
+
+    private void updateConnectionInfo() {
+        if (mActivity.mConnectionInfo != null) {
+            connectionInfo.setText(mActivity.mConnectionInfo.toString());
+        }
+    }
+
+
 }
