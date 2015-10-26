@@ -1,19 +1,30 @@
 package com.triestpa.wifi_direct_messaging;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.Uri;
 import android.net.wifi.WpsInfo;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pDeviceList;
 import android.net.wifi.p2p.WifiP2pManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -63,7 +74,6 @@ public class MainActivity extends ActionBarActivity {
                 // No services have actually been discovered yet, so this method
                 // can often be left blank.  Code for peer discovery goes in the
                 // onReceive method, detailed below.
-                mManager.requestPeers(mChannel, mActivity.peerListListener);
             }
 
             @Override
@@ -152,9 +162,6 @@ public class MainActivity extends ActionBarActivity {
             mPeers.clear();
             mPeers.addAll(peerList.getDeviceList());
 
-            // If an AdapterView is backed by this data, notify it
-            // of the change.  For instance, if you have a ListView of available
-            // peers, trigger an update.
             if (mPeers.size() == 0) {
                 Log.d(TAG, "No devices found");
                 return;
@@ -164,4 +171,64 @@ public class MainActivity extends ActionBarActivity {
             }
         }
     };
+
+    public static class ServerSocketTask extends AsyncTask<Void, String, String> {
+        private final String TAG = ServerSocketTask.class.getSimpleName();
+
+        private Context context;
+        private TextView statusText;
+
+        public ServerSocketTask(Context context, View statusText) {
+            this.context = context;
+            this.statusText = (TextView) statusText;
+        }
+
+        @Override
+        protected String doInBackground(Void... params) {
+            try {
+
+                /**
+                 * Create a server socket and wait for client connections. This
+                 * call blocks until a connection is accepted from a client
+                 */
+                ServerSocket serverSocket = new ServerSocket(8888);
+                Socket client = serverSocket.accept();
+
+                /**
+                 * If this code is reached, a client has connected and transferred data
+                 * Save the input stream from the client as a JPEG file
+                 */
+                final File f = new File(Environment.getExternalStorageDirectory() + "/"
+                        + context.getPackageName() + "/wifip2pshared-" + System.currentTimeMillis()
+                        + ".jpg");
+
+                File dirs = new File(f.getParent());
+                if (!dirs.exists())
+                    dirs.mkdirs();
+                f.createNewFile();
+                InputStream inputstream = client.getInputStream();
+               // copyFile(inputstream, new FileOutputStream(f));
+                serverSocket.close();
+                return f.getAbsolutePath();
+            } catch (IOException e) {
+                Log.e(TAG, e.getMessage());
+                return null;
+            }
+        }
+
+        /**
+         * Start activity that can handle the JPEG image
+         */
+        @Override
+        protected void onPostExecute(String result) {
+            if (result != null) {
+                statusText.setText("File copied - " + result);
+                Intent intent = new Intent();
+                intent.setAction(android.content.Intent.ACTION_VIEW);
+                intent.setDataAndType(Uri.parse("file://" + result), "image/*");
+                context.startActivity(intent);
+            }
+        }
+    }
+
 }
