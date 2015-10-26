@@ -7,6 +7,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 
 public class MainActivityFragment extends Fragment {
@@ -14,6 +15,7 @@ public class MainActivityFragment extends Fragment {
     MainActivity mActivity;
     TextView peerInfo;
     TextView connectionInfo;
+    EditText messageText;
 
 
     public MainActivityFragment() {
@@ -43,6 +45,14 @@ public class MainActivityFragment extends Fragment {
             }
         });
 
+        Button sendButton = (Button) fragmentView.findViewById(R.id.send_button);
+        sendButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mActivity.startClient("192.168.49.1", 8888, messageText.getText().toString());
+            }
+        });
+
 
         Button serverButton = (Button) fragmentView.findViewById(R.id.start_server);
         serverButton.setOnClickListener(new View.OnClickListener() {
@@ -52,7 +62,7 @@ public class MainActivityFragment extends Fragment {
             }
         });
 
-
+        messageText = (EditText) fragmentView.findViewById(R.id.message_input);
         peerInfo = (TextView) fragmentView.findViewById(R.id.peer_info);
         connectionInfo = (TextView) fragmentView.findViewById(R.id.connection_info);
 

@@ -3,6 +3,7 @@ package com.triestpa.wifi_direct_messaging;
 import android.app.AlertDialog;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.IntentFilter;
 import android.net.wifi.WpsInfo;
 import android.net.wifi.p2p.WifiP2pConfig;
@@ -179,13 +180,15 @@ public class MainActivity extends ActionBarActivity {
         }
     };
 
+
+
     public void startServer() {
         if (isServer) {new ServerSocketTask(this).execute();}
     }
 
-    public void startClient(String host, int port) {
+    public void startClient(String host, int port, String message) {
         if (!isServer) {
-            new ClientSocketTask(this, host, port).execute();
+            new ClientSocketTask(this, host, port, message).execute();
         }
     }
 
@@ -233,15 +236,25 @@ public class MainActivity extends ActionBarActivity {
         protected void onPostExecute(String result) {
             if (result != null) {
                 Log.d(TAG, "Message Received: " + result);
-                // 1. Instantiate an AlertDialog.Builder with its constructor
-                AlertDialog.Builder builder = new AlertDialog.Builder(context);
-                // 2. Chain together various setter methods to set the dialog characteristics
-                builder.setMessage(result).setTitle("Message");
-                // 3. Get the AlertDialog from create()
-                AlertDialog dialog = builder.create();
+                showMessage(result);
             }
         }
+
+        public void showMessage(String message) {
+            AlertDialog alertDialog = new AlertDialog.Builder(context).create();
+            alertDialog.setTitle("Message Recieved");
+            alertDialog.setMessage(message);
+            alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
+                    new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                        }
+                    });
+            alertDialog.show();
+        }
     }
+
+
 
 
     public static class ClientSocketTask extends AsyncTask<Void, Boolean, String> {
@@ -252,12 +265,13 @@ public class MainActivity extends ActionBarActivity {
         private String host;
         private int port;
 
-        String message = "test";
+        String message;
 
-        public ClientSocketTask(Context context, String host, int port) {
+        public ClientSocketTask(Context context, String host, int port, String message) {
             this.context = context;
             this.host = host;
             this.port = port;
+            this.message = message;
         }
 
         @Override
