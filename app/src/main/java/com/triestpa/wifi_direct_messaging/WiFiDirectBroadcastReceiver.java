@@ -45,10 +45,8 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
             if (mManager != null) {
                 mManager.requestPeers(mChannel, mActivity.peerListListener);
             }
-
         } else if (WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION.equals(action)) {
             Log.d(TAG, "P2P connection changed");
-
 
             if (mManager == null) {
                 return;

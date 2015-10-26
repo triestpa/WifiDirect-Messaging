@@ -7,7 +7,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.TextView;
 
 public class MainActivityFragment extends Fragment {
@@ -15,8 +14,7 @@ public class MainActivityFragment extends Fragment {
     MainActivity mActivity;
     TextView peerInfo;
     TextView connectionInfo;
-    EditText messageText;
-
+    TextView currentNumber;
 
     public MainActivityFragment() {
     }
@@ -31,7 +29,7 @@ public class MainActivityFragment extends Fragment {
         testButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                discoverPeers();
+                mActivity.discoverPeers();
                 updateInfo();
             }
         });
@@ -45,26 +43,17 @@ public class MainActivityFragment extends Fragment {
             }
         });
 
-        Button sendButton = (Button) fragmentView.findViewById(R.id.send_button);
-        sendButton.setOnClickListener(new View.OnClickListener() {
+        Button startButton = (Button) fragmentView.findViewById(R.id.start_comms);
+        startButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mActivity.startClient("192.168.49.1", 8888, messageText.getText().toString());
+                mActivity.startCommunications();
             }
         });
 
-
-        Button serverButton = (Button) fragmentView.findViewById(R.id.start_server);
-        serverButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mActivity.startServer();
-            }
-        });
-
-        messageText = (EditText) fragmentView.findViewById(R.id.message_input);
         peerInfo = (TextView) fragmentView.findViewById(R.id.peer_info);
         connectionInfo = (TextView) fragmentView.findViewById(R.id.connection_info);
+        currentNumber = (TextView) fragmentView.findViewById(R.id.current_number);
 
         return fragmentView;
     }
@@ -73,17 +62,25 @@ public class MainActivityFragment extends Fragment {
         //TODO update the device in the UI
     }
 
-    private void discoverPeers() {
-        mActivity.discoverPeers();
-    }
-
     private void updateInfo() {
-        peerInfo.setText(mActivity.mPeers.toString());
+        if (mActivity.mPeers != null || !mActivity.mPeers.isEmpty()) {
+            peerInfo.setText(mActivity.mPeers.size() + " Peer(s) Found");
+        }
+        else {
+            peerInfo.setText("No Peers Found");
+        }
     }
 
     private void updateConnectionInfo() {
         if (mActivity.mConnectionInfo != null) {
-            connectionInfo.setText(mActivity.mConnectionInfo.toString());
+            if (mActivity.isServer) {
+                connectionInfo.setText("Connection Established, you are host");
+            } else {
+                connectionInfo.setText("Connection Established, you are client");
+            }
+        }
+        else {
+            connectionInfo.setText("Not Connected");
         }
     }
 

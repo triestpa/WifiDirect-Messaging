@@ -1,7 +1,6 @@
 package com.triestpa.wifi_direct_messaging;
 
 import android.app.AlertDialog;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.IntentFilter;
@@ -21,12 +20,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -44,6 +41,12 @@ public class MainActivity extends ActionBarActivity {
     WifiP2pInfo mConnectionInfo;
     MainActivity mActivity;
     WiFiDirectBroadcastReceiver mReceiver;
+
+    private static final String ServerAddr ="192.168.49.1";
+    private static final int ServerPort = 8888;
+
+    static boolean keepGoing = true;
+
 
     List mPeers = new ArrayList();
 
@@ -181,16 +184,15 @@ public class MainActivity extends ActionBarActivity {
         }
     };
 
-
-    public void startServer() {
+    public void startCommunications() {
+        keepGoing = true;
+        MainActivityFragment fragment = (MainActivityFragment) getSupportFragmentManager().findFragmentById(R.id.fragment);
+        TextView updateText = fragment.currentNumber;
         if (isServer) {
-            new ServerSocketTask(this).execute();
+            new ServerSocketTask(this, updateText).execute();
         }
-    }
-
-    public void startClient(String host, int port, String message) {
-        if (!isServer) {
-            new ClientSocketTask(this, host, port, message).execute();
+        else {
+            new ClientSocketTask(this, updateText).execute();
         }
     }
 
@@ -198,11 +200,11 @@ public class MainActivity extends ActionBarActivity {
         private final String TAG = ServerSocketTask.class.getSimpleName();
 
         private Context context;
-        int len;
-        byte buf[] = new byte[1024];
+        private TextView updateText;
 
-        public ServerSocketTask(Context context) {
+        public ServerSocketTask(Context context, TextView updateText) {
             this.context = context;
+            this.updateText = updateText;
         }
 
         @Override
@@ -215,49 +217,41 @@ public class MainActivity extends ActionBarActivity {
                  */
 
                 Log.d(TAG, "Server Listening");
-                ServerSocket serverSocket = new ServerSocket(8888);
+                ServerSocket serverSocket = new ServerSocket(ServerPort);
 
-                while(true) {
-                    Socket client = serverSocket.accept();
+                Socket client = serverSocket.accept();
 
-                    InetAddress clientIP = client.getInetAddress();
-                    Log.d(TAG, clientIP.toString());
+                InetAddress clientIP = client.getInetAddress();
+                Log.d(TAG, clientIP.toString());
 
-                    /**
-                     * If this code is reached, a client has connected and transferred data
-                     */
+                /**
+                 * If this code is reached, a client has connected and transferred data
+                 */
 
-                    Log.d(TAG, "Client Connected");
+                Log.d(TAG, "Client Connected");
 
-/*
-                    InputStream inputstream = client.getInputStream();
-                    StringWriter writer = new StringWriter();
-                    IOUtils.copy(inputstream, writer, "UTF-8");
-                    String theString = writer.toString();
-                   // inputstream.close();
-*/
+                PrintWriter out =
+                        new PrintWriter(client.getOutputStream(), true);
+                BufferedReader in = new BufferedReader(
+                        new InputStreamReader(client.getInputStream()));
 
-                    InputStream inputStream = client.getInputStream();
-                    BufferedReader in = new BufferedReader(new InputStreamReader(inputStream));
-                    String theString  = in.readLine();
+                String theString = in.readLine();
+                publishProgress(theString);
 
+                // Echo the message back
+                out.println(theString);
 
-                    publishProgress(theString);
-
-                    // Echo the message back
-                    OutputStream outputStream = client.getOutputStream();
-                    ContentResolver cr = context.getContentResolver();
-                    InputStream stringStream = null;
-                    stringStream = new ByteArrayInputStream(theString.getBytes("UTF-8"));
-                    while ((len = stringStream.read(buf)) != -1) {
-                        outputStream.write(buf, 0, len);
-                    }
-                   // outputStream.close();
-
+                while (keepGoing) {
+                    int currentNum = numberBounce(out, in);
+                    publishProgress(""+currentNum);
                     TimeUnit.SECONDS.sleep(2);
                 }
-                //serverSocket.close();
-                //return theString;
+
+                out.close();
+                in.close();
+                serverSocket.close();
+                Log.d(TAG, "Socket Closed");
+                return "Socket Closed";
             } catch (IOException e) {
                 Log.e(TAG, e.getMessage());
             }
@@ -268,16 +262,16 @@ public class MainActivity extends ActionBarActivity {
         }
 
         @Override
-        protected void onProgressUpdate(String... message) {
-            if (message[0] != null && message[0] != "") {
-                showMessage(message[0], context);
+        protected void onProgressUpdate(String... num) {
+            if (num[0] != null && num[0] != "") {
+                //showMessage(num[0], context);
+                updateText.setText(num[0]);
             }
         }
 
         @Override
         protected void onPostExecute(String result) {
             if (result != null) {
-                Log.d(TAG, "Message Received: " + result);
                 showMessage(result, context);
             }
         }
@@ -291,22 +285,18 @@ public class MainActivity extends ActionBarActivity {
         private String host;
         private int port;
 
-        String message;
-        String echo = "Not Echo";
+        private TextView updateText;
 
-        public ClientSocketTask(Context context, String host, int port, String message) {
+        public ClientSocketTask(Context context, TextView updateText) {
             this.context = context;
-            this.host = host;
-            this.port = port;
-            this.message = message;
+            this.updateText = updateText;
+            this.host = ServerAddr;
+            this.port = ServerPort;
         }
 
         @Override
         protected String doInBackground(Void... params) {
-            Context appContext = context.getApplicationContext();
-            int len;
             Socket socket = new Socket();
-            byte buf[] = new byte[1024];
 
             try {
                 /**
@@ -316,27 +306,27 @@ public class MainActivity extends ActionBarActivity {
                 socket.bind(null);
                 socket.connect((new InetSocketAddress(host, port)), 500);
 
-                OutputStream outputStream = socket.getOutputStream();
+                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-                InputStream stringStream = new ByteArrayInputStream(message.getBytes("UTF-8"));
-                while ((len = stringStream.read(buf)) != -1) {
-                    outputStream.write(buf, 0, len);
+                out.println(0);
+
+                while (keepGoing) {
+                    int currentNum = numberBounce(out, in);
+                    publishProgress(""+currentNum);
+                    TimeUnit.SECONDS.sleep(2);
                 }
-                outputStream.close();
+
+                out.close();
+                in.close();
                 socket.close();
-
-
-                socket.connect((new InetSocketAddress(host, port)), 500);
-                InputStream inputStream = socket.getInputStream();
-                BufferedReader in = new BufferedReader(new InputStreamReader(inputStream));
-                echo = in.readLine();
-                publishProgress(echo);
-
-                inputStream.close();
-
+                Log.d(TAG, "Socket Closed");
             } catch (FileNotFoundException e) {
                 Log.e(TAG, e.getMessage());
             } catch (IOException e) {
+                Log.e(TAG, e.getMessage());
+            }
+            catch (InterruptedException e) {
                 Log.e(TAG, e.getMessage());
             }
 
@@ -349,19 +339,22 @@ public class MainActivity extends ActionBarActivity {
                     if (socket.isConnected()) {
                         try {
                             socket.close();
-                            return echo;
+                            return "Socket Closed";
                         } catch (IOException e) {
                             Log.e(TAG, e.getMessage());
                         }
                     }
                 }
             }
-            return echo;
+            return "There was probably an error";
         }
 
         @Override
-        protected void onProgressUpdate(String... message) {
-            showMessage(message[0], context);
+        protected void onProgressUpdate(String... num) {
+            if (num[0] != null && num[0] != "") {
+                // showMessage(message[0], context);
+                updateText.setText(num[0]);
+            }
         }
 
         @Override
@@ -373,9 +366,25 @@ public class MainActivity extends ActionBarActivity {
         }
     }
 
+    public static int numberBounce(PrintWriter out, BufferedReader in) {
+        try {
+            String theString = in.readLine();
+            if (theString != null) {
+                int num = Integer.parseInt(theString);
+                ++num;
+                out.println("" + num);
+                return num;
+            }
+        }
+        catch (IOException e) {
+                Log.e("NUMBER_BOUNCE_METHOD", e.getMessage());
+        }
+        return -1;
+    }
+
     public static void showMessage(String message, Context context) {
         AlertDialog alertDialog = new AlertDialog.Builder(context).create();
-        alertDialog.setTitle("Message Recieved");
+        alertDialog.setTitle("New Message");
         alertDialog.setMessage(message);
         alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
                 new DialogInterface.OnClickListener() {

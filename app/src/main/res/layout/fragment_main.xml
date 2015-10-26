@@ -15,19 +15,11 @@
         android:id="@+id/connect_button"
         />
 
-
-    <Button android:text="Send" android:layout_width="wrap_content"
+    <Button android:text="Start" android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_toLeftOf="@+id/detect_button"
         android:layout_centerVertical="true"
-        android:id="@+id/send_button"
-        />
-
-    <Button android:text="Start Server" android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_toLeftOf="@+id/send_button"
-        android:layout_centerVertical="true"
-        android:id="@+id/start_server"
+        android:id="@+id/start_comms"
         />
 
     <TextView
@@ -40,14 +32,22 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/connection_info"
-        android:layout_below="@+id/detect_button"
+        android:layout_below="@+id/peer_info"
         />
 
     <EditText
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/message_input"
-        android:layout_below="@+id/peer_info"
+        android:hint="Enter Message"
+        android:layout_below="@+id/connection_info"
+        />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/current_number"
+        android:layout_below="@+id/message_input"
         />
 
 </RelativeLayout>
