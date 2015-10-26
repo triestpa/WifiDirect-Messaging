@@ -1,8 +1,6 @@
 package com.triestpa.wifi_direct_messaging;
 
-import android.app.AlertDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.IntentFilter;
 import android.net.wifi.WpsInfo;
 import android.net.wifi.p2p.WifiP2pConfig;
@@ -10,7 +8,6 @@ import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pDeviceList;
 import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.p2p.WifiP2pManager;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
@@ -19,18 +16,8 @@ import android.view.MenuItem;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends ActionBarActivity {
     private final String TAG = MainActivity.class.getSimpleName();
@@ -42,8 +29,8 @@ public class MainActivity extends ActionBarActivity {
     MainActivity mActivity;
     WiFiDirectBroadcastReceiver mReceiver;
 
-    private static final String ServerAddr ="192.168.49.1";
-    private static final int ServerPort = 8888;
+    static final String ServerAddr ="192.168.49.1";
+    static final int ServerPort = 8888;
 
     static boolean keepGoing = true;
 
@@ -194,216 +181,5 @@ public class MainActivity extends ActionBarActivity {
         else {
             new ClientSocketTask(this, updateText).execute();
         }
-    }
-
-    public static class ServerSocketTask extends AsyncTask<Void, String, String> {
-        private final String TAG = ServerSocketTask.class.getSimpleName();
-
-        private Context context;
-        private TextView updateText;
-
-        public ServerSocketTask(Context context, TextView updateText) {
-            this.context = context;
-            this.updateText = updateText;
-        }
-
-        @Override
-        protected String doInBackground(Void... params) {
-            try {
-
-                /**
-                 * Create a server socket and wait for client connections. This
-                 * call blocks until a connection is accepted from a client
-                 */
-
-                Log.d(TAG, "Server Listening");
-                ServerSocket serverSocket = new ServerSocket(ServerPort);
-
-                Socket client = serverSocket.accept();
-
-                InetAddress clientIP = client.getInetAddress();
-                Log.d(TAG, clientIP.toString());
-
-                /**
-                 * If this code is reached, a client has connected and transferred data
-                 */
-
-                Log.d(TAG, "Client Connected");
-
-                PrintWriter out =
-                        new PrintWriter(client.getOutputStream(), true);
-                BufferedReader in = new BufferedReader(
-                        new InputStreamReader(client.getInputStream()));
-
-                String theString = in.readLine();
-                publishProgress(theString);
-
-                // Echo the message back
-                out.println(theString);
-
-                while (keepGoing) {
-                    int currentNum = numberBounce(out, in);
-
-                    if (currentNum == -1) {
-                        keepGoing = false;
-                    }
-
-                    publishProgress(""+currentNum);
-                    TimeUnit.MILLISECONDS.sleep(50);
-                }
-
-                out.close();
-                in.close();
-                serverSocket.close();
-                Log.d(TAG, "Socket Closed");
-                return "Socket Closed";
-            } catch (IOException e) {
-                Log.e(TAG, e.getMessage());
-            }
-            catch (InterruptedException e) {
-                Log.e(TAG, e.getMessage());
-            }
-            return null;
-        }
-
-        @Override
-        protected void onProgressUpdate(String... num) {
-            if (num[0] != null && num[0] != "") {
-                //showMessage(num[0], context);
-                updateText.setText(num[0]);
-            }
-        }
-
-        @Override
-        protected void onPostExecute(String result) {
-            if (result != null) {
-                showMessage(result, context);
-                updateText.setText("-1");
-            }
-        }
-    }
-
-    public static class ClientSocketTask extends AsyncTask<Void, String, String> {
-        private final String TAG = ServerSocketTask.class.getSimpleName();
-
-        private Context context;
-        private TextView statusText;
-        private String host;
-        private int port;
-
-        private TextView updateText;
-
-        public ClientSocketTask(Context context, TextView updateText) {
-            this.context = context;
-            this.updateText = updateText;
-            this.host = ServerAddr;
-            this.port = ServerPort;
-        }
-
-        @Override
-        protected String doInBackground(Void... params) {
-            Socket socket = new Socket();
-
-            try {
-                /**
-                 * Create a client socket with the host,
-                 * port, and timeout information.
-                 */
-                socket.bind(null);
-                socket.connect((new InetSocketAddress(host, port)), 500);
-
-                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-
-                out.println(0);
-
-                while (keepGoing) {
-                    int currentNum = numberBounce(out, in);
-
-                    if (currentNum == -1) {
-                        keepGoing = false;
-                    }
-
-                    publishProgress(""+currentNum);
-                    TimeUnit.MILLISECONDS.sleep(50);
-                }
-
-                out.close();
-                in.close();
-            } catch (FileNotFoundException e) {
-                Log.e(TAG, e.getMessage());
-            } catch (IOException e) {
-                Log.e(TAG, e.getMessage());
-            }
-            catch (InterruptedException e) {
-                Log.e(TAG, e.getMessage());
-            }
-
-
-            /**
-             * Clean up any open sockets when done
-             * transferring or if an exception occurred.
-             */ finally {
-                if (socket != null) {
-                    if (socket.isConnected()) {
-                        try {
-                            socket.close();
-                            Log.d(TAG, "Socket Closed");
-                            return "Socket Closed";
-                        } catch (IOException e) {
-                            Log.e(TAG, e.getMessage());
-                        }
-                    }
-                }
-            }
-            return "There was probably an error";
-        }
-
-        @Override
-        protected void onProgressUpdate(String... num) {
-            if (num[0] != null && num[0] != "") {
-                // showMessage(message[0], context);
-                updateText.setText(num[0]);
-            }
-        }
-
-        @Override
-        protected void onPostExecute(String message) {
-            if (message != null) {
-                showMessage(message, context);
-                updateText.setText("-1");
-                Log.d(TAG, message);
-            }
-        }
-    }
-
-    public static int numberBounce(PrintWriter out, BufferedReader in) {
-        try {
-            String theString = in.readLine();
-            if (theString != null) {
-                int num = Integer.parseInt(theString);
-
-                ++num;
-                out.println("" + num);
-                return num;
-            }
-        }
-        catch (IOException e) {
-                Log.e("NUMBER_BOUNCE_METHOD", e.getMessage());
-        }
-        return -1;
-    }
-
-    public static void showMessage(String message, Context context) {
-        AlertDialog alertDialog = new AlertDialog.Builder(context).create();
-        alertDialog.setTitle("New Message");
-        alertDialog.setMessage(message);
-        alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
-                new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                    }
-                });
-        alertDialog.show();
     }
 }
