@@ -13,7 +13,6 @@ import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
@@ -34,7 +33,6 @@ public class MainActivity extends ActionBarActivity implements CommunicationUtil
     static final String ServerAddr = "192.168.49.1";
     static final int ServerPort = 8888;
 
-    static boolean socketOpen = false;
     static boolean keepGoing = false;
     static boolean keepRetrying = false;
 
@@ -108,9 +106,14 @@ public class MainActivity extends ActionBarActivity implements CommunicationUtil
     @Override
     public void onSocketTaskCompleted() {
         Log.d(TAG, "Retrying: Attempt " + numAttempts);
-        if (keepRetrying) {
+        if (keepRetrying && isServer) {
+            new ServerScanTask(this, mFragment).execute();
+            startCommunications();
+        }
+        else if (keepRetrying && !isServer) {
             ++numAttempts;
-            mFragment.socketInfo.setText("Attempting to Reconnect: " + numAttempts);
+            discoverPeers();
+            connectToDevice();
             startCommunications();
         }
         else {
@@ -128,11 +131,19 @@ public class MainActivity extends ActionBarActivity implements CommunicationUtil
             @Override
             public void onSuccess() {
                 Log.d(TAG, "Peer Discovery Success");
+                if (mPeers.size() == 0) {
+                    Log.d(TAG, "No devices found");
+                    mFragment.peerInfo.setText("No devices found");
+                } else {
+                    Log.d(TAG, mPeers.toString());
+                    mFragment.peerInfo.setText(mPeers.size() + " Peer(s) Found");
+                }
             }
 
             @Override
             public void onFailure(int reasonCode) {
                 Log.e(TAG, "Peer Discovery Failed");
+                mFragment.peerInfo.setText("Peer Discovery Failed");
             }
         });
     }
@@ -166,32 +177,32 @@ public class MainActivity extends ActionBarActivity implements CommunicationUtil
 
     public void startCommunications() {
         mFragment = (MainActivityFragment) getSupportFragmentManager().findFragmentById(R.id.fragment);
-        TextView updateText = mFragment.currentNumber;
+        mFragment.socketInfo.setText("Attempting to Connect");
         if (isServer) {
-            new ServerSocketTask(this, updateText, this).execute();
+            new ServerSocketTask(this, mFragment, this).execute();
+
         } else {
-            new ClientSocketTask(this, updateText, this).execute();
+            new ClientSocketTask(this, mFragment, this).execute();
         }
     }
 
+    public void updatePeerInfo() {
+        if (mPeers.size() == 0) {
+            Log.d(TAG, "No devices found");
+            mFragment.peerInfo.setText("No devices found");
+        } else {
+            Log.d(TAG, mPeers.toString());
+            mFragment.peerInfo.setText(mPeers.size() + " Peer(s) Found");
+        }
+    }
 
     protected WifiP2pManager.PeerListListener peerListListener = new WifiP2pManager.PeerListListener() {
         @Override
         public void onPeersAvailable(WifiP2pDeviceList peerList) {
-
             // Out with the old, in with the new.
             mPeers.clear();
             mPeers.addAll(peerList.getDeviceList());
-
-            // If an AdapterView is backed by this data, notify it
-            // of the change.  For instance, if you have a ListView of available
-            // peers, trigger an update.
-            if (mPeers.size() == 0) {
-                Log.d(TAG, "No devices found");
-                return;
-            } else {
-                Log.d(TAG, mPeers.toString());
-            }
+            updatePeerInfo();
         }
     };
 }

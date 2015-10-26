@@ -3,7 +3,6 @@ package com.triestpa.wifi_direct_messaging;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.util.Log;
-import android.widget.TextView;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -12,21 +11,21 @@ import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
-public class ClientSocketTask extends AsyncTask<Void, String, String> {
+public class ClientSocketTask extends AsyncTask<Void, Integer, String> {
     private final String TAG = ServerSocketTask.class.getSimpleName();
 
+
     private Context context;
-    private TextView statusText;
     private String host;
     private int port;
 
-    private TextView updateText;
+    private MainActivityFragment fragment;
     private CommunicationUtils.OnSocketTaskCompleted listener;
 
 
-    public ClientSocketTask(Context context, TextView updateText, CommunicationUtils.OnSocketTaskCompleted listener) {
+    public ClientSocketTask(Context context, MainActivityFragment fragment, CommunicationUtils.OnSocketTaskCompleted listener) {
         this.context = context;
-        this.updateText = updateText;
+        this.fragment = fragment;
         this.listener = listener;
         this.host = MainActivity.ServerAddr;
         this.port = MainActivity.ServerPort;
@@ -44,7 +43,7 @@ public class ClientSocketTask extends AsyncTask<Void, String, String> {
             socket.bind(null);
             socket.connect((new InetSocketAddress(host, port)), 500);
 
-            MainActivity.socketOpen = true;
+            publishProgress(CommunicationUtils.CONNECTION_ESTABLISHED_CODE);
             MainActivity.keepGoing = true;
             MainActivity.numAttempts = 0;
 
@@ -60,7 +59,7 @@ public class ClientSocketTask extends AsyncTask<Void, String, String> {
                     MainActivity.keepGoing = false;
                 }
 
-                publishProgress("" + currentNum);
+                publishProgress(currentNum);
             }
 
             out.close();
@@ -82,7 +81,6 @@ public class ClientSocketTask extends AsyncTask<Void, String, String> {
                 if (socket.isConnected()) {
                     try {
                         socket.close();
-                        MainActivity.socketOpen = false;
                         return "Socket Closed";
                     } catch (IOException e) {
                         Log.e(TAG, e.getMessage());
@@ -94,9 +92,12 @@ public class ClientSocketTask extends AsyncTask<Void, String, String> {
     }
 
     @Override
-    protected void onProgressUpdate(String... num) {
-        if (num[0] != null && num[0] != "") {
-            updateText.setText(num[0]);
+    protected void onProgressUpdate(Integer... num) {
+        if (num[0] == CommunicationUtils.CONNECTION_ESTABLISHED_CODE) {
+            fragment.socketInfo.setText("Socket Connection Opened to Server");
+        }
+        else {
+            fragment.currentNumber.setText("" + num[0]);
         }
     }
 
@@ -106,7 +107,7 @@ public class ClientSocketTask extends AsyncTask<Void, String, String> {
             CommunicationUtils.showToast(message, context);
             Log.d(TAG, message);
         }
-        updateText.setText("-1");
+        fragment.currentNumber.setText("-1");
         listener.onSocketTaskCompleted();
     }
 }

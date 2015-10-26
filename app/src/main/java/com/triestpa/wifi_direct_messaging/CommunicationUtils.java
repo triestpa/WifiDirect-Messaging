@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 public class CommunicationUtils {
+    static final int CONNECTION_ESTABLISHED_CODE = -200;
 
     public interface OnSocketTaskCompleted {
         void onSocketTaskCompleted();

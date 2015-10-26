@@ -50,7 +50,6 @@
         android:layout_height="wrap_content"
         android:id="@+id/socket_info"
         android:layout_below="@+id/connection_info"
-        android:textSize="40dp"
         />
 
     <TextView
@@ -58,6 +57,7 @@
         android:layout_height="wrap_content"
         android:id="@+id/current_number"
         android:layout_below="@+id/socket_info"
+        android:textSize="40dp"
         />
 
 </RelativeLayout>

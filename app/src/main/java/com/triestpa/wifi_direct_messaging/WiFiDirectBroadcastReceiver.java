@@ -27,7 +27,6 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
         String action = intent.getAction();
         if (WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION.equals(action)) {
             Log.d(TAG, "P2P state changed");
-
             // Determine if Wifi P2P mode is enabled or not, alert
             // the Activity.
             int state = intent.getIntExtra(WifiP2pManager.EXTRA_WIFI_STATE, -1);
@@ -56,7 +55,6 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
                     .getParcelableExtra(WifiP2pManager.EXTRA_NETWORK_INFO);
 
             if (networkInfo.isConnected()) {
-
                 // We are connected with the other device, request connection
                 // info to find group owner IP
                 mManager.requestConnectionInfo(mChannel, new WifiP2pManager.ConnectionInfoListener() {
@@ -73,6 +71,10 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
                     }
                 });
             }
+            else {
+                mActivity.mConnectionInfo = null;
+            }
+            mActivity.mFragment.updateConnectionInfo();
         } else if (WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION.equals(action)) {
                 Log.d(TAG, "P2P device changed");
         }

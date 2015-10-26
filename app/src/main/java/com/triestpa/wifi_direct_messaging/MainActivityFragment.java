@@ -31,8 +31,8 @@ public class MainActivityFragment extends Fragment {
         testButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                peerInfo.setText("Detecting...");
                 mActivity.discoverPeers();
-                updateInfo();
             }
         });
 
@@ -40,6 +40,7 @@ public class MainActivityFragment extends Fragment {
         connectButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                connectionInfo.setText("Connecting...");
                 mActivity.connectToDevice();
                 updateConnectionInfo();
             }
@@ -72,16 +73,7 @@ public class MainActivityFragment extends Fragment {
         return fragmentView;
     }
 
-    private void updateInfo() {
-        if (mActivity.mPeers != null && !mActivity.mPeers.isEmpty()) {
-            peerInfo.setText(mActivity.mPeers.size() + " Peer(s) Found");
-        }
-        else {
-            peerInfo.setText("No Peers Found");
-        }
-    }
-
-    private void updateConnectionInfo() {
+    protected void updateConnectionInfo() {
         if (mActivity.mConnectionInfo != null) {
             if (MainActivity.isServer) {
                 connectionInfo.setText("Connection Established, you are host");
