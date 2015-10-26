@@ -243,8 +243,13 @@ public class MainActivity extends ActionBarActivity {
 
                 while (keepGoing) {
                     int currentNum = numberBounce(out, in);
+
+                    if (currentNum == -1) {
+                        keepGoing = false;
+                    }
+
                     publishProgress(""+currentNum);
-                    TimeUnit.SECONDS.sleep(2);
+                    TimeUnit.MILLISECONDS.sleep(50);
                 }
 
                 out.close();
@@ -273,6 +278,7 @@ public class MainActivity extends ActionBarActivity {
         protected void onPostExecute(String result) {
             if (result != null) {
                 showMessage(result, context);
+                updateText.setText("-1");
             }
         }
     }
@@ -313,14 +319,17 @@ public class MainActivity extends ActionBarActivity {
 
                 while (keepGoing) {
                     int currentNum = numberBounce(out, in);
+
+                    if (currentNum == -1) {
+                        keepGoing = false;
+                    }
+
                     publishProgress(""+currentNum);
-                    TimeUnit.SECONDS.sleep(2);
+                    TimeUnit.MILLISECONDS.sleep(50);
                 }
 
                 out.close();
                 in.close();
-                socket.close();
-                Log.d(TAG, "Socket Closed");
             } catch (FileNotFoundException e) {
                 Log.e(TAG, e.getMessage());
             } catch (IOException e) {
@@ -339,6 +348,7 @@ public class MainActivity extends ActionBarActivity {
                     if (socket.isConnected()) {
                         try {
                             socket.close();
+                            Log.d(TAG, "Socket Closed");
                             return "Socket Closed";
                         } catch (IOException e) {
                             Log.e(TAG, e.getMessage());
@@ -361,6 +371,7 @@ public class MainActivity extends ActionBarActivity {
         protected void onPostExecute(String message) {
             if (message != null) {
                 showMessage(message, context);
+                updateText.setText("-1");
                 Log.d(TAG, message);
             }
         }
@@ -371,6 +382,7 @@ public class MainActivity extends ActionBarActivity {
             String theString = in.readLine();
             if (theString != null) {
                 int num = Integer.parseInt(theString);
+
                 ++num;
                 out.println("" + num);
                 return num;

@@ -2,25 +2,34 @@
     xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
     android:layout_height="match_parent" tools:context=".MainActivityFragment">
 
-    <Button android:text="Detect" android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        android:id="@+id/detect_button"
-        />
 
-    <Button android:text="Connect" android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_toRightOf="@+id/detect_button"
-        android:layout_centerVertical="true"
-        android:id="@+id/connect_button"
-        />
+        <Button android:text="Detect" android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:id="@+id/detect_button"
+            />
 
-    <Button android:text="Start" android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_toLeftOf="@+id/detect_button"
-        android:layout_centerVertical="true"
-        android:id="@+id/start_comms"
-        />
+        <Button android:text="Connect" android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toRightOf="@+id/detect_button"
+            android:layout_centerVertical="true"
+            android:id="@+id/connect_button"
+            />
+
+        <Button android:text="Start" android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toLeftOf="@+id/detect_button"
+            android:layout_centerVertical="true"
+            android:id="@+id/start_comms"
+            />
+
+
+        <Button android:text="Stop" android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toLeftOf="@+id/start_comms"
+            android:layout_centerVertical="true"
+            android:id="@+id/stop"
+            />
 
     <TextView
         android:layout_width="wrap_content"
@@ -35,19 +44,12 @@
         android:layout_below="@+id/peer_info"
         />
 
-    <EditText
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/message_input"
-        android:hint="Enter Message"
-        android:layout_below="@+id/connection_info"
-        />
-
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/current_number"
-        android:layout_below="@+id/message_input"
+        android:layout_below="@+id/connection_info"
+        android:textSize="40dp"
         />
 
 </RelativeLayout>

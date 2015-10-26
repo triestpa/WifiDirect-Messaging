@@ -51,6 +51,14 @@ public class MainActivityFragment extends Fragment {
             }
         });
 
+        Button stopButton = (Button) fragmentView.findViewById(R.id.stop);
+        stopButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mActivity.keepGoing = false;
+            }
+        });
+
         peerInfo = (TextView) fragmentView.findViewById(R.id.peer_info);
         connectionInfo = (TextView) fragmentView.findViewById(R.id.connection_info);
         currentNumber = (TextView) fragmentView.findViewById(R.id.current_number);
