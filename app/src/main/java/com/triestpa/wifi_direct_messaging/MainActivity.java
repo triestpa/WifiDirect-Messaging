@@ -19,7 +19,7 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends ActionBarActivity {
+public class MainActivity extends ActionBarActivity implements CommunicationUtils.OnSocketTaskCompleted {
     private final String TAG = MainActivity.class.getSimpleName();
 
     private final IntentFilter intentFilter = new IntentFilter();
@@ -29,15 +29,20 @@ public class MainActivity extends ActionBarActivity {
     MainActivity mActivity;
     WiFiDirectBroadcastReceiver mReceiver;
 
-    static final String ServerAddr ="192.168.49.1";
+    MainActivityFragment mFragment;
+
+    static final String ServerAddr = "192.168.49.1";
     static final int ServerPort = 8888;
 
-    static boolean keepGoing = true;
+    static boolean socketOpen = false;
+    static boolean keepGoing = false;
+    static boolean keepRetrying = false;
 
+    static int numAttempts = 0;
 
     List mPeers = new ArrayList();
 
-    boolean isServer = false;
+    static boolean isServer = false;
     boolean wifiP2pEnabled = false;
 
     @Override
@@ -60,27 +65,6 @@ public class MainActivity extends ActionBarActivity {
         mManager = (WifiP2pManager) getSystemService(Context.WIFI_P2P_SERVICE);
         mChannel = mManager.initialize(this, getMainLooper(), null);
         mActivity = this;
-
-    }
-
-    public void discoverPeers() {
-        mManager.discoverPeers(mChannel, new WifiP2pManager.ActionListener() {
-
-            @Override
-            public void onSuccess() {
-                // Code for when the discovery initiation is successful goes here.
-                // No services have actually been discovered yet, so this method
-                // can often be left blank.  Code for peer discovery goes in the
-                // onReceive method, detailed below.
-            }
-
-            @Override
-            public void onFailure(int reasonCode) {
-                // Code for when the discovery initiation fails goes here.
-                // Alert the user that something went wrong.
-                Log.e(TAG, "Peer Discovery Failed");
-            }
-        });
     }
 
     /**
@@ -98,11 +82,6 @@ public class MainActivity extends ActionBarActivity {
         super.onPause();
         unregisterReceiver(mReceiver);
     }
-
-    public void setIsWifiP2pEnabled(boolean isEnabled) {
-        wifiP2pEnabled = isEnabled;
-    }
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -126,8 +105,40 @@ public class MainActivity extends ActionBarActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    public void connectToDevice() {
+    @Override
+    public void onSocketTaskCompleted() {
+        Log.d(TAG, "Retrying: Attempt " + numAttempts);
+        if (keepRetrying) {
+            ++numAttempts;
+            mFragment.socketInfo.setText("Attempting to Reconnect: " + numAttempts);
+            startCommunications();
+        }
+        else {
+            mFragment.socketInfo.setText("Connection Aborted");
+        }
+    }
 
+    public void setIsWifiP2pEnabled(boolean isEnabled) {
+        wifiP2pEnabled = isEnabled;
+    }
+
+    public void discoverPeers() {
+        mManager.discoverPeers(mChannel, new WifiP2pManager.ActionListener() {
+
+            @Override
+            public void onSuccess() {
+                Log.d(TAG, "Peer Discovery Success");
+            }
+
+            @Override
+            public void onFailure(int reasonCode) {
+                Log.e(TAG, "Peer Discovery Failed");
+            }
+        });
+    }
+
+
+    public void connectToDevice() {
         if (mPeers != null && !mPeers.isEmpty()) {
 
             // Picking the first device found on the network.
@@ -142,7 +153,6 @@ public class MainActivity extends ActionBarActivity {
                 @Override
                 public void onSuccess() {
                     // WiFiDirectBroadcastReceiver will notify us. Ignore for now.
-
                 }
 
                 @Override
@@ -154,6 +164,17 @@ public class MainActivity extends ActionBarActivity {
         }
     }
 
+    public void startCommunications() {
+        mFragment = (MainActivityFragment) getSupportFragmentManager().findFragmentById(R.id.fragment);
+        TextView updateText = mFragment.currentNumber;
+        if (isServer) {
+            new ServerSocketTask(this, updateText, this).execute();
+        } else {
+            new ClientSocketTask(this, updateText, this).execute();
+        }
+    }
+
+
     protected WifiP2pManager.PeerListListener peerListListener = new WifiP2pManager.PeerListListener() {
         @Override
         public void onPeersAvailable(WifiP2pDeviceList peerList) {
@@ -162,24 +183,15 @@ public class MainActivity extends ActionBarActivity {
             mPeers.clear();
             mPeers.addAll(peerList.getDeviceList());
 
+            // If an AdapterView is backed by this data, notify it
+            // of the change.  For instance, if you have a ListView of available
+            // peers, trigger an update.
             if (mPeers.size() == 0) {
                 Log.d(TAG, "No devices found");
                 return;
             } else {
-                Log.d(TAG, mPeers.size() + " Peer(s) Found");
+                Log.d(TAG, mPeers.toString());
             }
         }
     };
-
-    public void startCommunications() {
-        keepGoing = true;
-        MainActivityFragment fragment = (MainActivityFragment) getSupportFragmentManager().findFragmentById(R.id.fragment);
-        TextView updateText = fragment.currentNumber;
-        if (isServer) {
-            new ServerSocketTask(this, updateText).execute();
-        }
-        else {
-            new ClientSocketTask(this, updateText).execute();
-        }
-    }
 }

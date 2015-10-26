@@ -4,12 +4,17 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.util.Log;
+import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 
 public class CommunicationUtils {
+
+    public interface OnSocketTaskCompleted {
+        void onSocketTaskCompleted();
+    }
 
     public static void showMessage(String message, Context context) {
         AlertDialog alertDialog = new AlertDialog.Builder(context).create();
@@ -24,6 +29,9 @@ public class CommunicationUtils {
         alertDialog.show();
     }
 
+    public static void showToast(String message, Context context) {
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
+    }
 
     public static int numberBounce(PrintWriter out, BufferedReader in) {
         try {

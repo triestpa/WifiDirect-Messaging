@@ -59,7 +59,6 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
 
                 // We are connected with the other device, request connection
                 // info to find group owner IP
-
                 mManager.requestConnectionInfo(mChannel, new WifiP2pManager.ConnectionInfoListener() {
                     @Override
                     public void onConnectionInfoAvailable(WifiP2pInfo info) {
@@ -74,17 +73,8 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
                     }
                 });
             }
-
         } else if (WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION.equals(action)) {
                 Log.d(TAG, "P2P device changed");
-
-                /*
-                MainActivityFragment fragment = (MainActivityFragment) mActivity.getFragmentManager()
-                        .findFragmentById(R.id.fragment);
-                fragment.updateThisDevice((WifiP2pDevice) intent.getParcelableExtra(
-                        WifiP2pManager.EXTRA_WIFI_P2P_DEVICE));
-                */
-
         }
     }
 }
