@@ -28,6 +28,8 @@ public class MainActivity extends ActionBarActivity implements CommunicationUtil
     MainActivity mActivity;
     WiFiDirectBroadcastReceiver mReceiver;
 
+    PeerScanTask peerScanTask;
+
     MainActivityFragment mFragment;
 
     static final String ServerAddr = "192.168.49.1";
@@ -105,18 +107,26 @@ public class MainActivity extends ActionBarActivity implements CommunicationUtil
 
     @Override
     public void onSocketTaskCompleted() {
-        Log.d(TAG, "Retrying: Attempt " + numAttempts);
         if (keepRetrying && isServer) {
-            new ServerScanTask(this, mFragment).execute();
+            if (peerScanTask == null) {
+                peerScanTask = new PeerScanTask(this, mFragment);
+                peerScanTask.execute();
+            }
             startCommunications();
         }
         else if (keepRetrying && !isServer) {
+            startCommunications();
             ++numAttempts;
             discoverPeers();
             connectToDevice();
-            startCommunications();
+            mFragment.updateConnectionInfo();
+            updatePeerInfo();
         }
         else {
+            if (peerScanTask != null) {
+                peerScanTask.cancel(true);
+                peerScanTask = null;
+            }
             mFragment.socketInfo.setText("Connection Aborted");
         }
     }
